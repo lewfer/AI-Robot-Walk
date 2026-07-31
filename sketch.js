@@ -1,107 +1,116 @@
+// Teach a robot to walk
+// The robot is a simple two-segment arm attached to a car chassis. 
+// The arm is controlled by two joints, which are animated to create a walking motion. 
+// The goal is to have the robot push itself forward using the arm segments.
+
 // --- Matter.js Modules ---
 const { Engine, Body, Bodies, Constraint, Composite } = Matter;
 
 let engine;
 let world;
-
-// --- Robot Parts ---
-let chassis;
-let wheelLeft, wheelRight;
-let ground;
-let car;
+let GROUNDWIDTH = 600;
+let GROUNDHEIGHT = 40;
+let WALLWITH = 20;
+let WALLHEIGHT = 160;  
+let CIRCLERADIANS = 2*Math.PI; 
 
 function setup() {
-  createCanvas(800, 400);
+  createCanvas(800, 600);
 
   // Initialize Matter physics engine
   engine = Engine.create();
   engine.gravity.y = 1; 
   
   // Boost iterations to give the arm enough rigid strength to push the car body
-  engine.positionIterations = 20; 
-  engine.velocityIterations = 20; 
+  engine.positionIterations = 15; 
+  engine.velocityIterations = 15; 
   
   world = engine.world;
 
-  // 1. Create Ground (Slightly lowered so car can drop onto it)
-  ground = Bodies.rectangle(400, 350, 800, 40, { 
+  // Create Ground (Slightly lowered so car can drop onto it)
+  ground = Bodies.rectangle(GROUNDWIDTH / 2, 350, GROUNDWIDTH, GROUNDHEIGHT, { 
     isStatic: true, 
     friction: 0.9 // High friction so the arm can bite and push off
   });
   Composite.add(world, ground);
 
-  // Spawn car safely above the ground (yy = 200) so the arm doesn't spawn stuck in dirt
+  // Create wall
+  wall = Bodies.rectangle(10, 250, WALLWITH, WALLHEIGHT, { 
+    isStatic: true, 
+    friction: 0.9 
+  });
+  Composite.add(world, wall);
+
+  // Drop car safely above the ground
   car = createCar(150, 200, 150 , 30 , 30);
-  Composite.add(world, [car]);
+  Composite.add(world, car);
 }
 
 let seconds = 0;
 let lastSecond = 0;
 
-let angles1 = [0, -2*Math.PI/4];
-let angles2 = [0, 2*Math.PI/6, 2*Math.PI/3];
+// 0 is horiztonal pointing right, positive is clockwise, negative is counter-clockwise
+// -CIRCLERADIANS*0.25 is straight up
+// +CIRCLERADIANS*0.25 is straight down
+// -CIRCLERADIANS*0.5 or +CIRCLERADIANS*0.5 is straight left
+let angles1 = [-CIRCLERADIANS*0.1, -CIRCLERADIANS*0.2];
+let angles2 = [CIRCLERADIANS*0.1, CIRCLERADIANS*0.25, CIRCLERADIANS*0.4];
 let states = [[0, 0], [0, 1], [0, 2], [1, 2], [1, 0]]; // Each state corresponds to a pair of angles for arm1 and arm2
 
 function draw() {
   background(240);
 
   // --- Sine Wave Crawling Animation ---
-  let time = millis() * 0.0015; // Controls the speed of the rowing cycle
-  let motorStrength = 0.5;     // Joint stiffness/torque multiplier
+  let motorStrength = 0.001;     // Joint stiffness/torque multiplier, higher values make the arm move faster and more rigidly
 
   seconds = int(millis() / 1000);
   if (seconds > lastSecond) {
     lastSecond = seconds;
-    print("Time:", seconds, "s");
+    //print("Time:", seconds, "s");
   } 
 
-
-
   // 1. Joint 0 (Chassis to Arm 1) Movement
-  // Base angle points slightly down, oscillating up and down to take steps
-  let baseAngle1 = car.chassis.angle //+ (Math.PI * 0.1); 
-  let swingRange1 = Math.PI * 0.25; 
-  //let targetAngle1 =angles1[seconds % angles1.length]; //baseAngle1 + Math.sin(time) * swingRange1;
-  let targetAngle1 = angles1[states[seconds % states.length][0]]; //baseAngle1 + Math.sin(time) * swingRange1;
+  let targetAngle1 = car.chassis.angle + angles1[states[seconds % states.length][0]]; 
+  //let angleError1 = 0
+
+  let angleError1 = targetAngle1 - car.arm1.angle;
+  let torque1 = angleError1 * motorStrength;
+  car.arm1.torque += torque1;
+  car.chassis.torque -= torque1;
   Body.setAngle(car.arm1, targetAngle1);
-  let angleError1 = 0
 
-//   let angleError1 = targetAngle1 - car.arm1.angle;
-//   let torque1 = angleError1 * motorStrength;
 
-//   car.arm1.torque += torque1;
-//   car.chassis.torque -= torque1; 
-   car.arm1.torque += 1;
-   car.chassis.torque -= 1;
+  // Apply torque
+  //car.arm1.torque += 1;
+  //car.chassis.torque -= 1;
 
   // 2. Joint 1 (Arm 1 to Arm 2) Movement
-  // By adding (Math.PI * 0.5) to the time, Arm 2 lags behind Arm 1.
-  // This phase delay creates a natural "scooping" or "rowing" motion.
-  let baseAngle2 = car.arm1.angle //+ (Math.PI * 0.2); 
-  let swingRange2 = Math.PI * 0.4; 
-  //let targetAngle2 =angles2[seconds % angles2.length]; //baseAngle2 + Math.sin(time - Math.PI * 0.5) * swingRange2;
-  let targetAngle2 = angles2[states[seconds % states.length][1]]; //baseAngle2 + Math.sin(time - Math.PI * 0.5) * swingRange2;
-Body.setAngle(car.arm2, targetAngle2);
-  let angleError2 = 0
+  let targetAngle2 = car.arm1.angle + angles2[states[seconds % states.length][1]]; 
+  // Body.setAngle(car.arm2, targetAngle2);
+  // let angleError2 = 0
 
-//   let angleError2 = targetAngle2 - car.arm2.angle;
-//   let torque2 = angleError2 * motorStrength;
+  // // Apply torque
+  // car.arm2.torque += 1;
+  // car.arm1.torque -= 1; 
 
-//   car.arm2.torque += torque2;
-//   car.arm1.torque -= torque2; 
-   car.arm2.torque += 1;
-   car.arm1.torque -= 1; 
-    // --- HARD LOCK / RESTRAINT SYSTEM ---
-  // If the arm is very close to its target position, actively damp its velocity 
-  // to remove the "floppiness" and freeze it instantly.
-  if (Math.abs(angleError1) < 0.05) {
-      // 0.1 leaves 10% velocity, killing 90% of the wobble instantly
-      Body.setAngularVelocity(car.arm1, 0); //car.arm1.angularVelocity * 0.1); 
-  }
-  if (Math.abs(angleError2) < 0.05) {
-      Body.setAngularVelocity(car.arm2, 0); //car.arm2.angularVelocity * 0.1);
-  }
+  let angleError2 = targetAngle2 - car.arm2.angle;
+  let torque2 = angleError2 * motorStrength;
+  // Apply torque
+  car.arm2.torque += torque2;
+  car.arm1.torque -= torque2; 
+  Body.setAngle(car.arm2, targetAngle2);
 
+
+  // Actively damp its velocity to remove the "floppiness" and freeze it instantly.
+  Body.setAngularVelocity(car.arm1, 0);
+  Body.setAngularVelocity(car.arm2, 0)
+  // if (Math.abs(angleError1) < 0.05) {
+  //     // 0.1 leaves 10% velocity, killing 90% of the wobble instantly
+  //     Body.setAngularVelocity(car.arm1, car.arm1.angularVelocity * 0.1); 
+  // }
+  // if (Math.abs(angleError2) < 0.05) {
+  //     Body.setAngularVelocity(car.arm2, car.arm2.angularVelocity * 0.1);
+  // }
   // ------------------------------------
 
   // Sub-stepping for maximum constraint resolution
@@ -110,13 +119,13 @@ Body.setAngle(car.arm2, targetAngle2);
   for (let i = 0; i < subSteps; i++) {
       Engine.update(engine, (1000 / hz) / subSteps);
   }
-
+  //Engine.update(engine)
 
   // --- Rendering ---
   fill(100);
   noStroke();
   drawGround(ground);
-
+  drawWall(wall);
   drawCar(car);
 }
 
@@ -129,7 +138,20 @@ function drawGround(body) {
     translate(pos.x, pos.y);
     rotate(angle);
     rectMode(CENTER);
-    rect(0, 0, 800, 40); // Matches setup dimensions
+    rect(0, 0, GROUNDWIDTH, GROUNDHEIGHT); // Matches setup dimensions
+    pop();
+}
+
+function drawWall(body) {
+    let pos = body.position;
+    let angle = body.angle; 
+
+    push();
+    translate(pos.x, pos.y);
+    rotate(angle);
+    rectMode(CENTER);
+    fill(150, 75, 0);
+    rect(0, 0, WALLWITH, WALLHEIGHT);
     pop();
 }
 
@@ -210,11 +232,11 @@ createCar = function(xx, yy, width, height, wheelSize) {
     var car = Composite.create({ label: 'Car' });
 
     var chassis = Bodies.rectangle(xx, yy, width, height, { 
-            collisionFilter: { group: group },
-            chamfer: { radius: height * 0.5 },
-            density: 0.005, 
-            //frictionAir: 0, 
-        });
+        collisionFilter: { group: group },
+        chamfer: { radius: height * 0.5 },
+        density: 0.01, 
+        //frictionAir: 0, 
+    });
 
     var wheelA = Bodies.circle(xx + wheelAOffset, yy + wheelYOffset, wheelSize, { 
         collisionFilter: { group: group },
@@ -248,19 +270,19 @@ createCar = function(xx, yy, width, height, wheelSize) {
         length: 0
     });
     
-    // Segment 1: Spawns connected to the front of the chassis
+    // Segment 1: Connected to the front of the chassis
     var arm1 = Bodies.rectangle(xx + width/2 + arm1Width/2, yy, arm1Width, arm1Height, {  
         collisionFilter: { group: group },
-        density: 0.002, 
+        density: 0.005, 
         friction: 0.4,
         frictionStatic: 1.0,
         //frictionAir: 0
     });
 
-    // Segment 2: Spawns connected to the end of arm1
+    // Segment 2: Connected to the end of arm1
     var arm2 = Bodies.rectangle(xx + width/2 + arm1Width + arm2Width/2, yy, arm2Width, arm2Height, {  
         collisionFilter: { group: group },
-        density: 0.002, 
+        density: 0.005, 
         friction: 0.9, // High friction so the tip can grip the floor
         frictionStatic: 1.0,
         //frictionAir: 0
