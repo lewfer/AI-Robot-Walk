@@ -207,13 +207,15 @@ class QAgent {
   }
   
   
-  train(episode) {
+  train(episodes) {
     //Train for the given number of episodes
 
     // Run the search for a solution starting at the given state.  Assumes you have already trained the agent.
-    action = this.trainStart (start_state)
-    while (action != null) 
-      action = trainStep () 
+    let action = this.trainStart ()
+    while (action != null && episodes>0) {
+      action = this.trainStep () 
+      episodes -= 1
+    }
   }
   
   trainStart() {

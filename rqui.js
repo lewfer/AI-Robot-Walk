@@ -2,6 +2,7 @@
  Code to handle the drawing of the UI
  */
 
+
  // Dimensions for drawing
 let gridWidth = 400
 let gridHeight = gridWidth
@@ -110,19 +111,49 @@ function createButtons() {
 
 // Show or hide buttons based on program status
 function showHideButtons() {
+    let highlightColour = color(255, 200, 200);
+    let normalColour = color(255, 255, 255);
 
+    // Reset all buttons to normal colour
+    buttonTrain.style('background-color', color(255, 255, 255));
+    buttonLearn.style('background-color', color(255, 255, 255));
+    buttonRun.style('background-color', color(255, 255, 255));
+
+    // Highlight the button corresponding to the current mode
+    if (mode == "Training") {
+        buttonTrain.style('background-color', color(255, 200, 200));
+    }
+    else if (mode == "Learning") {
+        buttonLearn.style('background-color', color(255, 200, 200));
+    }
+    else if (mode == "Running") {
+        buttonRun.style('background-color', color(255, 200, 200));
+    }   
 }
 
 // Train button handler
-function train() {
-    // episode = 0
-    // mode = "Training"
+function train() {   
+    if (mode == "Training")
+        mode = ""
+    else 
+        mode = "Training"
+    showHideButtons()
 }
 
 // Learn button handler
-function learn() {
+function learn() {    
+    if (mode == "Learning")
+        mode = ""
+    else 
+        mode = "Learning"
+    showHideButtons()
 }
 
 // Run button handler
 function run() {
+    if (mode == "Running")
+        mode = ""   
+    else 
+        mode = "Running"
+    showHideButtons()
 }

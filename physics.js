@@ -18,15 +18,13 @@ let lastTransitionCount = 0;
 // -CIRCLERADIANS*0.5 or +CIRCLERADIANS*0.5 is straight left
 let angles1 = [-CIRCLERADIANS * 0.1, -CIRCLERADIANS * 0.2];
 let angles2 = [CIRCLERADIANS * 0.1, CIRCLERADIANS * 0.25, CIRCLERADIANS * 0.4];
-let bestStates = [[0, 0], [0, 1], [0, 2], [1, 2], [1, 0]]; // Each state corresponds to a pair of angles for arm1 and arm2
-let possibleStates = [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]]; // All possible combinations of angles for arm1 and arm2
 
 let lastDistanceFromWall1 = 0;
 let lastDistanceFromWall2 = 0;
 let currentStateIndex = 0;
 let lastState1Index = 0;
 let lastState2Index = 0;
-let currentState = possibleStates[0];
+let currentState;
 let lastState1;
 let lastState2;
 
@@ -60,10 +58,15 @@ function setupPhysics() {
     Composite.add(world, car);
 }
 
-function drawPhysics() {
+function drawPhysics(states, randomizeStates) {
+
+    // If the current state is undefined, initialize it to the first state in the list
+    if (currentState == undefined) {
+        currentStateIndex = 0;
+        currentState = states[currentStateIndex];
+    }
 
     let stateChange = false;
-    background(240);
 
     // --- Multi-Joint Motor Control ---
     let motorStrength = 0.001;     // Joint stiffness/torque multiplier, higher values make the arm move faster and more rigidly
@@ -82,8 +85,16 @@ function drawPhysics() {
         //currentState = bestStates[transitionCount % bestStates.length]; 
 
         // Choose a random state from the possible states
-        currentStateIndex = Math.floor(Math.random() * possibleStates.length);
-        currentState = possibleStates[currentStateIndex];
+        if (randomizeStates) {
+            currentStateIndex = Math.floor(Math.random() * states.length);
+            currentState = states[currentStateIndex];
+        }
+        else {
+            currentStateIndex = transitionCount % states.length;
+            currentState = states[currentStateIndex];
+        }
+        //currentStateIndex = Math.floor(Math.random() * possibleStates.length);
+        //currentState = possibleStates[currentStateIndex];
     }
 
 
@@ -161,7 +172,7 @@ function drawPhysics() {
         if (lastState1 != undefined && lastState2 != undefined) {
 
             reward = round(distanceFromWall - lastDistanceFromWall1)
-            print("[" + lastState2[0] + ", " + lastState2[1] + "]", "[" + lastState1[0] + ", " + lastState1[1] + "]", round(distanceFromWall - lastDistanceFromWall1))
+            //print("Moved [" + lastState2[0] + ", " + lastState2[1] + "]", "[" + lastState1[0] + ", " + lastState1[1] + "]", round(distanceFromWall - lastDistanceFromWall1))
             lastDistanceFromWall2 = lastDistanceFromWall1;
             lastDistanceFromWall1 = distanceFromWall;
         return reward
