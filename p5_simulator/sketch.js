@@ -60,7 +60,7 @@ function draw() {
 
     if (mode == "Training") {
         let reward;
-        
+
         reward = drawPhysics(possibleStates, true)
 
         if (reward != undefined) {
@@ -79,14 +79,14 @@ function draw() {
         }
         previousMode = "Training"
     }
-    else if (mode == "Learning") {        
+    else if (mode == "Learning") {
         if (previousMode != "Learning") {
             // Reset the agent to start from the first state
             agent.train(100)
         }
 
         //drawPhysics(possibleStates, false)
-        previousMode = "Learning"   
+        previousMode = "Learning"
     }
     else if (mode == "Running") {
         if (previousMode != "Running") {
@@ -99,12 +99,64 @@ function draw() {
             }
             print("Run states: ", runStates)
         }
-        
+
         reward = drawPhysics(runStates, false)
         lastState2Index = lastState1Index = 0
 
         previousMode = "Running"
-    }   
+    }
+    else if (mode == "LoadR") {
+        // Load the R matrix from movements.csv file with from, to and reward values
+        // From is a state index, to is a state index and reward is a number
+        // Read each row and update the R matrix to the new average distance change
+
+        print("Loading R matrix from movements.csv")
+        // Clear the R matrix and rewardCounts
+        for (let from = 0; from < rewards.length; from++) {
+            for (let to = 0; to < rewards[from][0].length; to++) {
+                agent.R.setValue(from, 0, to, 0)
+                rewardCounts[from][0][to] = 0
+            }
+        }
+
+        // Open csv file and read each row
+        table = loadTable('movements.csv', ',', 'header', function () {
+            print(table)
+            for (let r = 0; r < table.rows.length; r++) {
+                print("Row: ", r, table.getString(r, 'from'))
+                let from = table.getNum(r, 'from')
+                let to = table.getNum(r, 'to')
+                let reward = table.getNum(r, 'distance')
+                print(from, to, reward)
+
+                // Update the R matrix to the new average distance change
+                currentReward = agent.R.getValue(from, 0, to)
+                rewardCounts[from][0][to] += 1
+                let numItems = rewardCounts[from][0][to]
+                newReward = (currentReward * (numItems - 1) + reward) / numItems; // Compute the new average reward
+                agent.R.setValue(from, 0, to, newReward);
+            }
+        })
+        mode = ""
+        previousMode = "LoadR"
+    }
+    else if (mode == "SaveQ") {
+        // Save the Q matrix to a csv file with from, to and q-value
+        print("Saving Q matrix to qvalues.csv")
+        let csv = ["from,to,qvalue"]
+        print(agent.Q.matrix[0])
+        print(agent.Q.matrix.length, agent.Q.matrix[0][0].length)
+        for (let from = 0; from < agent.Q.matrix.length; from++) {
+            for (let to = 0; to < agent.Q.matrix[0][0].length; to++) {
+                csv.push(`${from},${to},${agent.Q.getValue(from, 0, to).toFixed(2)}`)
+                print(".")
+            }
+        }
+        print(csv)
+        saveStrings(csv, 'qvalues.csv')
+        mode = ""
+        previousMode = "SaveQ"  
+    }
 
     drawLearningUI()
 

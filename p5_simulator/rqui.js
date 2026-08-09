@@ -107,6 +107,16 @@ function createButtons() {
     buttonRun.position(x, height);
     buttonRun.mousePressed(run);
     x += buttonRun.width    
+
+    buttonLoadR = createButton('Load R');
+    buttonLoadR.position(x, height);
+    buttonLoadR.mousePressed(loadR);
+    x += buttonLoadR.width    
+
+    buttonSaveQ = createButton('Save Q');
+    buttonSaveQ.position(x, height);
+    buttonSaveQ.mousePressed(saveQ);
+    x += buttonSaveQ.width        
 }
 
 // Show or hide buttons based on program status
@@ -118,6 +128,8 @@ function showHideButtons() {
     buttonTrain.style('background-color', color(255, 255, 255));
     buttonLearn.style('background-color', color(255, 255, 255));
     buttonRun.style('background-color', color(255, 255, 255));
+    buttonLoadR.style('background-color', color(255, 255, 255));
+    buttonSaveQ.style('background-color', color(255, 255, 255));
 
     // Highlight the button corresponding to the current mode
     if (mode == "Training") {
@@ -129,6 +141,7 @@ function showHideButtons() {
     else if (mode == "Running") {
         buttonRun.style('background-color', color(255, 200, 200));
     }   
+
 }
 
 // Train button handler
@@ -155,5 +168,23 @@ function run() {
         mode = ""   
     else 
         mode = "Running"
+    showHideButtons()
+}
+
+// Load R button handler
+function loadR() {
+    if (mode == "LoadR")
+        mode = ""   
+    else 
+        mode = "LoadR"
+    showHideButtons()
+}   
+
+// Save Q button handler
+function saveQ() {
+    if (mode == "SaveQ")
+        mode = ""   
+    else 
+        mode = "SaveQ"
     showHideButtons()
 }
