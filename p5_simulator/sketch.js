@@ -17,148 +17,110 @@ let rewards = [
     [[0, 0, 0, 0, 0, 0]]   //# from 5
 ]
 
-// So we can compute average
-let rewardCounts = [
-    //#  ----------- Move ----------
-    //#  to   to   to   to   to   to
-    //#   0    1    2    3    4    5
-    [[0, 0, 0, 0, 0, 0]],  //# from 0
-    [[0, 0, 0, 0, 0, 0]],  //# from 1
-    [[0, 0, 0, 0, 0, 0]],  //# from 2
-    [[0, 0, 0, 0, 0, 0]],  //# from 3
-    [[0, 0, 0, 0, 0, 0]],  //# from 4
-    [[0, 0, 0, 0, 0, 0]]   //# from 5
-]
+// All possible combinations of angles for arm1 and arm2
+let possibleStates = [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]]; 
 
-let bestStates = [[0, 0], [0, 1], [0, 2], [1, 2], [1, 0]]; // Each state corresponds to a pair of angles for arm1 and arm2
-let possibleStates = [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]]; // All possible combinations of angles for arm1 and arm2
-let runStates = []
+// State sequence when running the trained robot
+let runStates
 
 // Agent which will do the learning
 let agent
 
+// Remember the previous mode
+let previousMode = ""
+
+
+// Function that runs when the program starts
 function setup() {
+    // Create a canvas for drawing
     createCanvas(850, 850);
 
+    // Setup the physics simulation
     setupPhysics()
 
     // Create the R matrix
-    let R = new Matrix(num_states = rewards.length, action_names = ['M'])
-    R.setMatrix(rewards)
+    let R = createRMatrix(rewards)
 
     // Create a q-learning agent
-    agent = new QAgent(R, goal_state = -1)
+    agent = createQAgent(R)
 
+    // Setup the learning UI
     setupLearningUI()
 }
 
-let previousMode = ""
-
+// Function that runs over and over once setup() completes
 function draw() {
-
+    // Grey background
     background(240);
 
+    // In training mode the simulated robot is moved to random positions and the distance moved is used to update the R matrix
     if (mode == "Training") {
-        let reward;
-
-        reward = drawPhysics(possibleStates, true)
-
-        if (reward != undefined) {
-
-
-            print(lastState2Index, lastState1Index)
-            // Update the R matrix to the new average distance change
-            currentReward = agent.R.getValue(lastState2Index, 0, lastState1Index)
-            rewardCounts[lastState2Index][0][lastState1Index] += 1
-            let numItems = rewardCounts[lastState2Index][0][lastState1Index]
-            newReward = (currentReward * (numItems - 1) + reward) / numItems; // Compute the new average reward
-
-            //print(currentReward, numItems, newReward, newReward)
-            agent.R.setValue(lastState2Index, 0, lastState1Index, newReward);
-
+        if (previousMode != "Training") {
+            // If we have just entered the training mode we need to reset the last state indices to 0
+            resetTraining()
         }
+
+        // Use the physics engine to draw the robot using random movements
+        let reward = drawPhysics(possibleStates, true)
+
+        // If we get a reward update the R matrix cell for this movement to be the new average distance change for that movement
+        if (reward != undefined) {
+            addReward(reward); 
+        }
+
         previousMode = "Training"
     }
+
+    // In learning mode the agent is trained using the R matrix to update the Q matrix
     else if (mode == "Learning") {
         if (previousMode != "Learning") {
-            // Reset the agent to start from the first state
+            // If we have just entered the learning mode, we need to reset the agent and start training it
+            // The parameter is the number of training steps to run.
+            // The Q matrix will be updated based on the rewards in the R matrix
             agent.train(100)
         }
 
-        //drawPhysics(possibleStates, false)
         previousMode = "Learning"
     }
+
+    // In running mode the agent is used to move the robot through a sequence of states based on the learning
     else if (mode == "Running") {
         if (previousMode != "Running") {
-            // Start from random state
-            runStates = []
-            agent.runStart(Math.floor(Math.random() * agent.num_states))
-            for (let i = 0; i < 10; i++) {
-                runStates.push(possibleStates[agent.current_state])
-                agent.runStep()
-            }
-            print("Run states: ", runStates)
+            // If we have just entered the running mode, we need to generate a sequence of states for the robot to run through
+            runStates = generateRunStates();
         }
 
+        // Use the physics engine to draw the robot using defined movements
         reward = drawPhysics(runStates, false)
-        lastState2Index = lastState1Index = 0
 
         previousMode = "Running"
     }
+
+    // If running in reset mode, reset the position of the robot to the start and continue the previous mode
+    else if (mode == "Reset") {
+        resetRobotPosition()
+
+        mode = previousMode // return to previous mode
+        showHideButtons()
+        previousMode = "Reset"
+    }
+
+    // If running in LoadR mode, load the movements from file and update R, then turn off LoadR mode
     else if (mode == "LoadR") {
-        // Load the R matrix from movements.csv file with from, to and reward values
-        // From is a state index, to is a state index and reward is a number
-        // Read each row and update the R matrix to the new average distance change
+        loadRFromFile()
 
-        print("Loading R matrix from movements.csv")
-        // Clear the R matrix and rewardCounts
-        for (let from = 0; from < rewards.length; from++) {
-            for (let to = 0; to < rewards[from][0].length; to++) {
-                agent.R.setValue(from, 0, to, 0)
-                rewardCounts[from][0][to] = 0
-            }
-        }
-
-        // Open csv file and read each row
-        table = loadTable('movements.csv', ',', 'header', function () {
-            print(table)
-            for (let r = 0; r < table.rows.length; r++) {
-                print("Row: ", r, table.getString(r, 'from'))
-                let from = table.getNum(r, 'from')
-                let to = table.getNum(r, 'to')
-                let reward = table.getNum(r, 'distance')
-                print(from, to, reward)
-
-                // Update the R matrix to the new average distance change
-                currentReward = agent.R.getValue(from, 0, to)
-                rewardCounts[from][0][to] += 1
-                let numItems = rewardCounts[from][0][to]
-                newReward = (currentReward * (numItems - 1) + reward) / numItems; // Compute the new average reward
-                agent.R.setValue(from, 0, to, newReward);
-            }
-        })
-        mode = ""
+        mode = "" // turn off this mode
         previousMode = "LoadR"
     }
+
+    // If running in SaveQ mode, save the Q matrix to a file and then turn off SaveQ mode
     else if (mode == "SaveQ") {
-        // Save the Q matrix to a csv file with from, to and q-value
-        print("Saving Q matrix to qvalues.csv")
-        let csv = ["from,to,qvalue"]
-        print(agent.Q.matrix[0])
-        print(agent.Q.matrix.length, agent.Q.matrix[0][0].length)
-        for (let from = 0; from < agent.Q.matrix.length; from++) {
-            for (let to = 0; to < agent.Q.matrix[0][0].length; to++) {
-                csv.push(`${from},${to},${agent.Q.getValue(from, 0, to).toFixed(2)}`)
-                print(".")
-            }
-        }
-        print(csv)
-        saveStrings(csv, 'qvalues.csv')
-        mode = ""
+        saveQToFile()
+
+        mode = "" // turn off this mode
         previousMode = "SaveQ"  
     }
 
+    // Draw the learning UI with the R and Q matrix
     drawLearningUI()
-
 }
-

@@ -108,6 +108,11 @@ function createButtons() {
     buttonRun.mousePressed(run);
     x += buttonRun.width    
 
+    buttonReset = createButton('Reset');
+    buttonReset.position(x, height);
+    buttonReset.mousePressed(resetRobot);
+    x += buttonReset.width 
+
     buttonLoadR = createButton('Load R');
     buttonLoadR.position(x, height);
     buttonLoadR.mousePressed(loadR);
@@ -121,6 +126,7 @@ function createButtons() {
 
 // Show or hide buttons based on program status
 function showHideButtons() {
+    print("Show/Hide buttons, mode: ", mode)
     let highlightColour = color(255, 200, 200);
     let normalColour = color(255, 255, 255);
 
@@ -128,6 +134,7 @@ function showHideButtons() {
     buttonTrain.style('background-color', color(255, 255, 255));
     buttonLearn.style('background-color', color(255, 255, 255));
     buttonRun.style('background-color', color(255, 255, 255));
+    buttonReset.style('background-color', color(255, 255, 255));
     buttonLoadR.style('background-color', color(255, 255, 255));
     buttonSaveQ.style('background-color', color(255, 255, 255));
 
@@ -136,11 +143,12 @@ function showHideButtons() {
         buttonTrain.style('background-color', color(255, 200, 200));
     }
     else if (mode == "Learning") {
-        buttonLearn.style('background-color', color(255, 200, 200));
+        //buttonLearn.style('background-color', color(255, 200, 200));
     }
     else if (mode == "Running") {
         buttonRun.style('background-color', color(255, 200, 200));
     }   
+
 
 }
 
@@ -168,6 +176,15 @@ function run() {
         mode = ""   
     else 
         mode = "Running"
+    showHideButtons()
+}
+
+// Reset button handler
+function resetRobot() {
+    if (mode == "Reset")
+        mode = ""
+    else
+        mode = "Reset"
     showHideButtons()
 }
 

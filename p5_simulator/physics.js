@@ -228,7 +228,7 @@ function drawCar(car) {
 
     // Draw Wheels
     let wheelA = car.wheelA;
-    let wheelB = car.wheelB;
+    //let wheelB = car.wheelB;
     push();
     noFill();
     stroke(0);
@@ -241,12 +241,12 @@ function drawCar(car) {
     line(0, 0, wheelA.circleRadius, 0);
     pop()
 
-    push()
-    translate(wheelB.position.x, wheelB.position.y);
-    rotate(wheelB.angle);
-    ellipse(0, 0, wheelB.circleRadius * 2);
-    line(0, 0, wheelB.circleRadius, 0);
-    pop()
+    // push()
+    // translate(wheelB.position.x, wheelB.position.y);
+    // rotate(wheelB.angle);
+    // ellipse(0, 0, wheelB.circleRadius * 2);
+    // line(0, 0, wheelB.circleRadius, 0);
+    // pop()
 
     pop()
 
@@ -279,7 +279,7 @@ createCar = function (xx, yy, width, height, wheelSize) {
     var group = Body.nextGroup(true),
         wheelBase = 20,
         wheelAOffset = -width * 0.5 + wheelBase,
-        wheelBOffset = width * 0.5 - wheelBase,
+        //wheelBOffset = width * 0.5 - wheelBase,
         wheelYOffset = 15;
 
     var arm1Width = 60;
@@ -304,13 +304,13 @@ createCar = function (xx, yy, width, height, wheelSize) {
         density: 0.005
     });
 
-    var wheelB = Bodies.circle(xx + wheelBOffset, yy + wheelYOffset, wheelSize, {
-        collisionFilter: { group: group },
-        friction: 0.9,
-        frictionStatic: 0,
-        //frictionAir: 0, 
-        density: 0.005
-    });
+    // var wheelB = Bodies.circle(xx + wheelBOffset, yy + wheelYOffset, wheelSize, {
+    //     collisionFilter: { group: group },
+    //     friction: 0.9,
+    //     frictionStatic: 0,
+    //     //frictionAir: 0, 
+    //     density: 0.005
+    // });
 
     var axelA = Constraint.create({
         bodyB: chassis,
@@ -320,13 +320,13 @@ createCar = function (xx, yy, width, height, wheelSize) {
         length: 0
     });
 
-    var axelB = Constraint.create({
-        bodyB: chassis,
-        pointB: { x: wheelBOffset, y: wheelYOffset },
-        bodyA: wheelB,
-        stiffness: 1,
-        length: 0
-    });
+    // var axelB = Constraint.create({
+    //     bodyB: chassis,
+    //     pointB: { x: wheelBOffset, y: wheelYOffset },
+    //     bodyA: wheelB,
+    //     stiffness: 1,
+    //     length: 0
+    // });
 
     // Segment 1: Connected to the front of the chassis
     var arm1 = Bodies.rectangle(xx + width / 2 + arm1Width / 2, yy, arm1Width, arm1Height, {
@@ -380,7 +380,7 @@ createCar = function (xx, yy, width, height, wheelSize) {
 
     car.chassis = chassis;
     car.wheelA = wheelA;
-    car.wheelB = wheelB;
+    //car.wheelB = wheelB;
     car.arm1 = arm1;
     car.arm1Width = arm1Width;
     car.arm1Height = arm1Height;
@@ -390,3 +390,28 @@ createCar = function (xx, yy, width, height, wheelSize) {
 
     return car;
 };
+
+function resetRobotPosition() {
+    print("Resetting robot position")
+    // Reset the robot to start position
+    //car.chassis.position = createVector(120, 200);
+    //car.chassis.position.x = car.chassis.position.x
+    Matter.Body.set(car.chassis, "position", {x: 120, y: 200})
+    Matter.Body.set(car.chassis, "angle", 0)
+
+    // 
+}
+
+function resetTraining() {
+    print("Resetting training data")
+    // Reset the training data
+    lastState1Index = 0;
+    lastState2Index = 0;
+    currentStateIndex = 0;
+    lastDistanceFromWall1 = 0;
+    lastDistanceFromWall2 = 0;
+    currentState = undefined;
+    lastState1 = undefined;
+    lastState2 = undefined;
+}
+
